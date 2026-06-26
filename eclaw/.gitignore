@@ -6,6 +6,8 @@
 /users.json
 /history.json
 /auth.json
+/.learnings/
+/.htaccess
 
 # -------- YOLO / ML 模型 --------
 /yolo*.pt
