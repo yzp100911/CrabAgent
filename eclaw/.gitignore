@@ -1,0 +1,38 @@
+# eclaw 端补充规则
+# 根 .gitignore 已覆盖大部分
+
+# -------- 用户数据 / 业务敏感文件 --------
+/ai/
+/users.json
+/history.json
+/auth.json
+
+# -------- YOLO / ML 模型 --------
+/yolo*.pt
+/yolo*.onnx
+/yolov8s.pt
+
+# -------- Playwright 调试脚本（运行产物）--------
+/playwright_*.py
+/playwright_*.log
+
+# -------- 上传 / 日志 --------
+/uploads/
+/server.log
+/server_stdout.log
+/yolo_server.log
+/logs/
+/data/
+
+# -------- systemd / nginx 部署配置 --------
+/eclaw.conf
+/eclaw.service
+
+# -------- 备份 --------
+/server.js.bak
+/server.js.bak2
+/server.js.backup
+
+# -------- wclaw 临时打包 --------
+/wclaw_*.tar.gz
+/wclaw_*.zip

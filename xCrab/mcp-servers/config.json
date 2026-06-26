@@ -1,0 +1,16 @@
+{
+  "servers": [
+    {
+      "id": "playwright",
+      "command": "node",
+      "args": ["/opt/cclaw-client/UbuntuClaw/xCrab/node_modules/@playwright/mcp/cli.js", "--headless", "--no-sandbox", "--browser", "chromium", "--viewport-size", "1920x1080", "--timeout-action", "180000", "--timeout-navigation", "180000"],
+      "description": "Playwright 浏览器自动化 MCP 服务器"
+    },
+    {
+      "id": "MiniMax",
+      "command": "/home/ubuntu/.local/bin/uvx",
+      "args": ["minimax-coding-plan-mcp", "-y"],
+      "description": "MiniMax MCP 服务器 (图片理解 + 网络搜索)"
+    }
+  ]
+}

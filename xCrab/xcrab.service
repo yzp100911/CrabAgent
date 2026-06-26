@@ -1,0 +1,27 @@
+[Unit]
+Description=xCrab - 迷你型 AI 个人助手
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/cclaw-client/UbuntuClaw/xCrab
+ExecStart=/usr/bin/node /opt/cclaw-client/UbuntuClaw/xCrab/index.js
+Restart=always
+RestartSec=10
+
+# 输出日志
+StandardOutput=journal
+StandardError=journal
+
+# 环境变量
+Environment=NODE_ENV=production
+
+# 限制
+NoNewPrivileges=true
+ProtectHome=false
+ProtectSystem=false
+
+[Install]
+WantedBy=multi-user.target

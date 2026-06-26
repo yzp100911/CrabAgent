@@ -1,0 +1,22 @@
+# wclaw 前端补充规则
+# 根 .gitignore 已覆盖大部分
+
+# -------- 历史备份 / 调试产物 --------
+*.bak
+*.bak.*
+*.backup
+*.fixed
+*.bak.sessionStates_bug_*
+*.bak.remove_preview_btn_*
+*.bak.fix_*
+*.bak.hallucination_*
+
+# 原始 HTML 保留，但备份排除
+/index_original.html
+/index.html.bak.*
+/styles.css.bak.*
+/app-*.js.bak.*
+/app-*.js.backup
+
+# -------- Edge TTS 配置备份 --------
+/edge-tts-config.html.bak.*

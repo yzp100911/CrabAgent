@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🦀 xCrab YOLO 智能检测</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .upload-area {
+            border: 3px dashed #ddd;
+            border-radius: 15px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: #f0f2ff;
+        }
+        .upload-icon {
+            font-size: 60px;
+            margin-bottom: 15px;
+        }
+        .upload-text {
+            color: #666;
+            font-size: 16px;
+        }
+        .upload-hint {
+            color: #999;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        #imageInput {
+            display: none;
+        }
+        .preview-container {
+            display: none;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .preview-container.show {
+            display: block;
+        }
+        .preview-img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        .text-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #eee;
+            border-radius: 10px;
+            font-size: 16px;
+            margin-bottom: 12px;
+            transition: border-color 0.3s;
+            outline: none;
+        }
+        .text-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+        }
+        .text-hint {
+            color: #999;
+            font-size: 12px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 15px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+        }
+        .btn-secondary:hover {
+            background: #eee;
+        }
+        .result-area {
+            display: none;
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #eee;
+        }
+        .result-area.show {
+            display: block;
+        }
+        .result-response {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            font-size: 18px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .result-image {
+            max-width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        .result-details {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            font-size: 14px;
+            color: #666;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 30px;
+        }
+        .loading.show {
+            display: block;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error {
+            background: #ffe0e0;
+            color: #d00;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+        .error.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>🦀 xCrab YOLO 智能检测</h1>
+            <p class="subtitle">上传图片 + 描述你的问题，我来帮你分析！</p>
+            
+            <!-- 上传区域 -->
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📷</div>
+                <div class="upload-text">点击上传图片</div>
+                <div class="upload-hint">支持 JPG、PNG 格式</div>
+            </div>
+            <input type="file" id="imageInput" accept="image/*">
+            
+            <!-- 图片预览 -->
+            <div class="preview-container" id="previewContainer">
+                <img src="" alt="预览" class="preview-img" id="previewImg">
+            </div>
+            
+            <!-- 文本输入框 -->
+            <input type="text" class="text-input" id="textInput" placeholder="例如：帮我算出图片有多少个物体？">
+            <div class="text-hint">💡 可以问我"有多少个XX"、"检测图里有几个XX"等问题</div>
+            
+            <!-- 按钮 -->
+            <button class="btn btn-primary" id="detectBtn">🔍 开始检测</button>
+            <button class="btn btn-secondary" id="resetBtn">📷 重新选择</button>
+            
+            <!-- 加载中 -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <div>🦀 正在分析中...</div>
+            </div>
+            
+            <!-- 错误提示 -->
+            <div class="error" id="errorMsg"></div>
+            
+            <!-- 结果区域 -->
+            <div class="result-area" id="resultArea">
+                <div class="result-response" id="resultResponse"></div>
+                <img src="" alt="检测结果" class="result-image" id="resultImage">
+                <div class="result-details" id="resultDetails"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const imageInput = document.getElementById('imageInput');
+        const previewContainer = document.getElementById('previewContainer');
+        const previewImg = document.getElementById('previewImg');
+        const textInput = document.getElementById('textInput');
+        const detectBtn = document.getElementById('detectBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const loading = document.getElementById('loading');
+        const errorMsg = document.getElementById('errorMsg');
+        const resultArea = document.getElementById('resultArea');
+        const resultResponse = document.getElementById('resultResponse');
+        const resultImage = document.getElementById('resultImage');
+        const resultDetails = document.getElementById('resultDetails');
+
+        let selectedFile = null;
+
+        // 点击上传区域
+        uploadArea.addEventListener('click', () => imageInput.click());
+        
+        // 拖拽上传
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type.startsWith('image/')) {
+                handleFileSelect(files[0]);
+            }
+        });
+
+        // 文件选择
+        imageInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+
+        function handleFileSelect(file) {
+            selectedFile = file;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImg.src = e.target.result;
+                previewContainer.classList.add('show');
+                uploadArea.style.display = 'none';
+                resultArea.classList.remove('show');
+                errorMsg.classList.remove('show');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // 重置
+        resetBtn.addEventListener('click', () => {
+            selectedFile = null;
+            imageInput.value = '';
+            previewContainer.classList.remove('show');
+            uploadArea.style.display = 'block';
+            resultArea.classList.remove('show');
+            errorMsg.classList.remove('show');
+            textInput.value = '';
+        });
+
+        // 检测
+        detectBtn.addEventListener('click', async () => {
+            if (!selectedFile) {
+                showError('请先选择一张图片');
+                return;
+            }
+
+            const text = textInput.value.trim() || '检测图里有几个物体';
+            
+            loading.classList.add('show');
+            errorMsg.classList.remove('show');
+            resultArea.classList.remove('show');
+            detectBtn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('image', selectedFile);
+            formData.append('text', text);
+
+            try {
+                const response = await fetch('/detect', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    resultResponse.textContent = data.response;
+                    resultImage.src = data.image_url;
+                    
+                    const details = data.result.detections.map(d => 
+                        `${d.class_name} (${d.confidence}%)`
+                    ).join('\n');
+                    resultDetails.textContent = details || '没有检测到物体';
+                    
+                    resultArea.classList.add('show');
+                } else {
+                    showError(data.error || '检测失败');
+                }
+            } catch (err) {
+                showError('网络错误，请重试');
+            } finally {
+                loading.classList.remove('show');
+                detectBtn.disabled = false;
+            }
+        });
+
+        function showError(msg) {
+            errorMsg.textContent = '❌ ' + msg;
+            errorMsg.classList.add('show');
+        }
+    </script>
+</body>
+</html>

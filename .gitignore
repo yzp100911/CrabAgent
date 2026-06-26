@@ -1,0 +1,108 @@
+# ============================================
+# CrabAgent Monorepo .gitignore
+# 覆盖 4 个端（cclaw / eclaw / wclaw / xCrab）
+# ============================================
+
+# -------- 大目录 --------
+node_modules/
+data/
+uploads/
+uploads-*/
+models/
+workspace-temporary/
+workspace-permanent/
+
+# -------- 模型权重 / 编译产物 --------
+*.pt
+*.pkl
+*.bin
+*.safetensors
+*.onnx
+
+# -------- 敏感文件 --------
+.env
+.env.*
+!.env.example
+*.log
+*.bak
+*.bak.*
+*.bak2
+*.backup
+*.orig
+
+# -------- 压缩包 / 密钥文件 --------
+*.tar.gz
+*.tar
+*.zip
+*.7z
+*.rar
+*.pem
+*.key
+*~
+
+# -------- 文档 / Office 文件（通常含敏感数据）--------
+*.docx
+*.doc
+*.xlsx
+*.xls
+*.pdf
+*.csv
+!src/**/*.csv
+
+# -------- 文本数据文件（爬取的用户/业务数据）--------
+*.txt
+!*.example
+!TOOLS.md
+!MERMAID-说明.md
+!*.gitignore
+!src/**/*.txt
+
+# -------- 图片（仅保留 icon/ 目录下的产品图标）--------
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.webp
+*.svg
+!*/icon/*
+!*/ico/*
+!src/**/*.png
+!src/**/*.jpg
+!src/**/*.jpeg
+!src/**/*.svg
+
+# -------- 数据库 / 缓存文件 --------
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+.eggs/
+*.egg-info/
+
+# -------- 编辑器 / 系统 --------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.tmp
+
+# -------- Playwright / Chromium 缓存 --------
+.playwright-cli/
+.playwright-mcp/
+.playwright-mcp-output/
+.cache/
+.local-browsers/
+
+# -------- 进程 / 后台日志 --------
+nohup.out
+*.out

@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, height=device-height">
+    <title>WClaw - 移动控制端</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/geist@1.3.1/dist/fonts/geist-sans/style.min.css">
+    <link rel="stylesheet" href="styles.css?v=5">
+
+</head>
+<body>
+
+<canvas id="particles-canvas"></canvas>
+
+<div id="connection-error-banner" style="display: none; position: fixed; top: 0; left: 0; width: 100%; background-color: #ff3b30; color: white; text-align: center; padding: 10px 0; z-index: 9999; font-size: 14px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+    <i class="fa-solid fa-triangle-exclamation"></i> 与服务器断开连接，正在尝试重新连接...
+</div>
+
+<div id="toast" class="alert"></div>
+
+<!-- 通知弹窗 -->
+<div id="notification-modal" class="modal-overlay">
+    <div class="modal-card" style="text-align: center;">
+        <div style="font-size: 40px; color: var(--primary); margin-bottom: 8px;"><i class="fa-solid fa-bullhorn"></i></div>
+        <h3 style="font-size: 20px; margin-bottom: 12px;">系统通知</h3>
+        <div id="notification-content" style="margin-bottom: 20px; line-height: 1.7; white-space: pre-wrap; color: var(--text-sub);"></div>
+        <div class="modal-actions" style="justify-content: center; gap: 12px;">
+            <button class="btn-cancel" onclick="hideNotification()" style="padding: 10px 20px; border-radius: var(--radius-sm);">不再显示</button>
+            <button class="btn-confirm" onclick="closeNotification()" style="padding: 10px 24px; border-radius: var(--radius-sm);">关 闭</button>
+        </div>
+    </div>
+</div>
+
+<!-- cclaw未连接警告弹窗 -->
+<div id="cclaw-warning-modal" class="modal-overlay">
+    <div class="modal-card" style="text-align: center;">
+        <div style="font-size: 48px; color: #FF9500; margin-bottom: 12px;"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <h3 style="color: #FF9500; font-size: 22px; margin-bottom: 8px;">连接警告</h3>
+        <div id="cclaw-warning-content" style="margin-bottom: 20px; line-height: 1.7; white-space: pre-wrap;">
+            <p style="margin: 4px 0;">您的本地执行端 (xCrab)未连接，请联系开发者（微信：cp520991317）授权</p>
+            <p style="color: var(--text-muted); font-size: 14px; margin: 4px 0;">授权后刷新页面即可正常使用</p>
+        </div>
+        <div class="modal-actions" style="justify-content: center;">
+            <button class="btn-confirm" style="width: 100%; padding: 12px; font-size: 16px; border-radius: var(--radius-md);" onclick="document.getElementById('cclaw-warning-modal').style.display='none'">我知道了</button>
+        </div>
+    </div>
+</div>
+
+<!-- 云端服务器断开连接弹窗 -->
+<div id="server-warning-modal" class="modal-overlay">
+    <div class="modal-card" style="text-align: center;">
+        <div style="font-size: 48px; color: #FF453A; margin-bottom: 12px;"><i class="fa-solid fa-wifi"></i></div>
+        <h3 style="color: #FF453A; font-size: 22px; margin-bottom: 8px;">连接断开</h3>
+        <div style="margin-bottom: 20px; line-height: 1.7; white-space: pre-wrap;">
+            <p style="margin: 4px 0;">与云端服务器断开连接</p>
+            <p style="color: var(--text-muted); font-size: 14px; margin: 4px 0;">正在尝试重新连接，请稍后刷新页面</p>
+        </div>
+        <div class="modal-actions" style="justify-content: center;">
+            <button class="btn-confirm" style="width: 100%; padding: 12px; font-size: 16px; border-radius: var(--radius-md);" onclick="document.getElementById('server-warning-modal').style.display='none'">我知道了</button>
+        </div>
+    </div>
+</div>
+
+<!-- 反馈弹窗 -->
+<div id="feedback-modal" class="modal-overlay">
+    <div class="modal-card">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+            <div style="font-size: 28px; color: var(--primary);"><i class="fa-solid fa-comment-dots"></i></div>
+            <h3 style="margin: 0; font-size: 20px;">意见反馈</h3>
+        </div>
+        <textarea id="feedback-text" rows="4" placeholder="请输入您的反馈意见..." style="margin-bottom: 4px;"></textarea>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="document.getElementById('feedback-modal').style.display='none'">取消</button>
+            <button class="btn-confirm" onclick="submitFeedback()">提 交</button>
+        </div>
+    </div>
+</div>
+
+<!-- 收藏弹窗 -->
+<div id="favorites-modal" class="modal-overlay">
+    <div class="modal-card">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+            <div style="font-size: 26px; color: #FF9500;"><i class="fa-solid fa-star"></i></div>
+            <h3 style="margin: 0; font-size: 20px;">我的收藏</h3>
+        </div>
+        <div class="favorites-list" id="favorites-list">
+            <!-- 收藏内容渲染 -->
+        </div>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="document.getElementById('favorites-modal').style.display='none'">关 闭</button>
+        </div>
+    </div>
+</div>
+
+<!-- 图片预览弹窗 -->
+<div id="image-preview-overlay" class="image-preview-overlay" onclick="closeImagePreview()">
+    <span class="image-preview-close">&times;</span>
+    <img class="image-preview-img" id="image-preview-img" src="" alt="图片预览">
+</div>
+
+<!-- 复制确认弹窗 -->
+<div id="copy-modal" class="modal-overlay">
+    <div class="modal-card">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+            <div style="font-size: 24px; color: var(--primary);"><i class="fa-solid fa-clipboard"></i></div>
+            <h3 style="margin: 0; font-size: 20px;">复制确认</h3>
+        </div>
+        <div id="copy-preview" style="margin: 12px 0 20px; line-height: 1.6; white-space: pre-wrap; word-break: break-all; background: var(--input-bg); padding: 12px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-light); color: var(--text-sub); font-size: 14px;"></div>
+        <div class="modal-actions" style="gap: 8px;">
+            <button class="btn-cancel" onclick="closeCopyModal()">取消</button>
+            <button class="btn-confirm" style="background: var(--primary);" onclick="confirmCopy()">复制</button>
+            <button class="btn-confirm" style="background: var(--warning);" onclick="quoteSelectedText()"><i class="fa-solid fa-quote-left"></i> 引用</button>
+        </div>
+    </div>
+</div>
+
+<!-- 切换模型弹窗 -->
+<div id="switch-model-modal" class="modal-overlay">
+    <div class="modal-card" style="text-align: center;">
+        <div style="font-size: 36px; color: var(--primary); margin-bottom: 8px;"><i class="fa-solid fa-arrows-rotate"></i></div>
+        <h3 style="font-size: 20px; margin-bottom: 4px;">切换大模型</h3>
+        <p style="color: var(--text-sub); font-size: 14px; margin: 0 0 8px 0;">选择要切换的主力模型</p>
+        <p id="current-active-model" style="color: var(--primary); font-size: 13px; margin: 0 0 16px 0; font-weight: 500;"></p>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+            <button id="btn-model-deepseek" class="btn-confirm" onclick="executeSwitchModel('deepseek')" style="padding: 14px; font-size: 15px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <span style="font-weight: 600;">deepseek-v4-flash[1M]</span>
+                <span style="font-size: 12px; opacity: 0.7;">DeepSeek</span>
+            </button>
+            <button class="btn-confirm" onclick="executeSwitchModel('minimax')" style="padding: 14px; font-size: 15px; border-radius: var(--radius-md); background: #10B981; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <span style="font-weight: 600;">MiniMax-M3</span>
+                <span style="font-size: 12px; opacity: 0.7;">MiniMax</span>
+            </button>
+            <button id="btn-model-mimo" class="btn-confirm" onclick="executeSwitchModel('mimo')" style="padding: 14px; font-size: 15px; border-radius: var(--radius-md); background: #F59E0B; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <span style="font-weight: 600;">mimo-v2.5-pro[1M]</span>
+                <span style="font-size: 12px; opacity: 0.7;">Mimo · 1M</span>
+            </button>
+            <button class="btn-confirm" onclick="closeSwitchModel();openCustomModel()" style="padding: 14px; font-size: 15px; border-radius: var(--radius-md); background: transparent; border: 2px dashed rgba(0,240,255,0.4); color: var(--primary); display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <span style="font-weight: 600;">自定模型</span>
+            </button>
+        </div>
+        <div class="modal-actions" style="justify-content: center;">
+            <button class="btn-cancel" onclick="closeSwitchModel()" style="width: 100%; padding: 10px; border-radius: var(--radius-md);">取 消</button>
+        </div>
+    </div>
+</div>
+
+<!-- 自定义模型弹窗 -->
+<div id="custom-model-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 450px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+            <div style="font-size: 28px; color: var(--primary);"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+            <h3 style="margin: 0; font-size: 20px;">自定义模型</h3>
+        </div>
+
+        <!-- 步骤1：选择提供商 -->
+        <div id="custom-provider-select">
+            <p style="color: var(--text-sub); font-size: 14px; margin-bottom: 12px;">选择 API 提供商</p>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button class="btn-confirm" onclick="selectCustomProvider('deepseek')" style="padding: 12px; font-size: 14px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <span style="font-weight: 600;">DeepSeek</span><span id="status-deepseek" style="font-size: 11px;"></span>
+                </button>
+                <button class="btn-confirm" onclick="selectCustomProvider('mimo')" style="padding: 12px; font-size: 14px; border-radius: var(--radius-md); background: #F59E0B; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <span style="font-weight: 600;">MiMo</span><span id="status-mimo" style="font-size: 11px;"></span>
+                </button>
+                <button class="btn-confirm" onclick="selectCustomProvider('minimax')" style="padding: 12px; font-size: 14px; border-radius: var(--radius-md); background: #10B981; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <span style="font-weight: 600;">MiniMax</span><span id="status-minimax" style="font-size: 11px;"></span>
+                </button>
+            </div>
+            <div class="modal-actions" style="justify-content: center; margin-top: 12px;">
+                <button class="btn-cancel" onclick="closeCustomModel()" style="width: 100%; padding: 10px; border-radius: var(--radius-md);">取 消</button>
+            </div>
+        </div>
+
+        <!-- 步骤2：填写配置 -->
+        <div id="custom-model-form" style="display: none;">
+            <p style="color: var(--text-sub); font-size: 14px; margin-bottom: 12px;">填写 <span id="custom-provider-name"></span> 配置</p>
+            <div id="custom-model-status" style="display: none; margin-bottom: 12px; padding: 10px; background: var(--card-bg); border-radius: var(--radius-md); border: 1px solid var(--border); font-size: 13px; color: var(--text);"></div>
+            <div style="margin-bottom: 10px;">
+                <label style="font-size: 13px; color: var(--text-sub); display: block; margin-bottom: 4px;">API Key</label>
+                <div style="position: relative;">
+                    <input type="password" id="custom-api-key" placeholder="输入你的 API Key"
+                        style="width: 100%; padding: 8px 36px 8px 12px; border: 1px solid var(--border);
+                        border-radius: var(--radius-sm); background: var(--input-bg);
+                        color: var(--text); font-size: 14px; box-sizing: border-box;">
+                    <button type="button" onclick="toggleApiKeyVisibility()" id="toggle-api-key-btn"
+                        style="position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+                        background: none; border: none; cursor: pointer; padding: 4px 6px;
+                        color: var(--text-sub); font-size: 16px; line-height: 1;"
+                        title="显示/隐藏 API Key">&#128065;</button>
+                </div>
+            </div>
+            <div style="margin-bottom: 10px;">
+                <label style="font-size: 13px; color: var(--text-sub); display: block; margin-bottom: 4px;">请求地址</label>
+                <input type="text" id="custom-base-url" placeholder="https://api.example.com/v1"
+                    style="width: 100%; padding: 8px 12px; border: 1px solid var(--border);
+                    border-radius: var(--radius-sm); background: var(--input-bg);
+                    color: var(--text); font-size: 14px; box-sizing: border-box;">
+            </div>
+            <div style="margin-bottom: 10px;">
+                <label style="font-size: 13px; color: var(--text-sub); display: block; margin-bottom: 4px;">模型名称</label>
+                <input type="text" id="custom-model-name" placeholder="deepseek-chat"
+                    style="width: 100%; padding: 8px 12px; border: 1px solid var(--border);
+                    border-radius: var(--radius-sm); background: var(--input-bg);
+                    color: var(--text); font-size: 14px; box-sizing: border-box;">
+            </div>
+            <div class="modal-actions" style="gap: 8px;">
+                <button class="btn-cancel" onclick="closeCustomModel()" style="flex: 1; padding: 10px; border-radius: var(--radius-md);">取消</button>
+                <button class="btn-cancel" onclick="goBackCustomProvider()" style="flex: 1; padding: 10px; border-radius: var(--radius-md);">返回</button>
+                <button class="btn-confirm" onclick="saveCustomModel()" style="flex: 1; padding: 10px; border-radius: var(--radius-md);">保存</button>
+            </div>
+        </div>
+
+        <div class="modal-actions" id="custom-model-bottom-actions" style="justify-content: center; display: none;">
+            <button class="btn-cancel" onclick="closeCustomModel()" style="width: 100%; padding: 10px; border-radius: var(--radius-md);">取 消</button>
+        </div>
+    </div>
+</div>
+
+<!-- 授权管理弹窗 -->
+<div id="auth-phones-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 450px; max-height: 80vh;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+            <div style="font-size: 28px; color: var(--primary);"><i class="fa-solid fa-user-shield"></i></div>
+            <h3 style="margin: 0; font-size: 20px;">授权管理</h3>
+        </div>
+        <div id="auth-phones-list" style="max-height: 50vh; overflow-y: auto; margin-bottom: 16px;">
+            <div style="text-align: center; color: var(--text-sub); padding: 20px;">
+                <i class="fa-solid fa-spinner fa-spin"></i> 加载中...
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="document.getElementById('auth-phones-modal').style.display='none'">关 闭</button>
+        </div>
+    </div>
+</div>
+
+<!-- 账号选择弹窗 -->
+<div id="account-select-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 400px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+            <div style="font-size: 28px; color: var(--primary);"><i class="fa-solid fa-users"></i></div>
+            <h3 style="margin: 0; font-size: 20px;">选择账号</h3>
+        </div>
+        <p style="color: var(--text-sub); font-size: 14px; margin-bottom: 16px;">该手机号绑定了多个账号，请选择要登录的账号：</p>
+        <div id="account-list" style="max-height: 50vh; overflow-y: auto;">
+            <!-- 账号列表渲染区 -->
+        </div>
+        <div class="modal-actions" style="margin-top: 16px;">
+            <button class="btn-cancel" onclick="document.getElementById('account-select-modal').style.display='none'">取 消</button>
+        </div>
+    </div>
+</div>
+
+<!-- 登录区 -->
+<div id="login-area">
+    <!-- 人偶 -->
+    <div class="mascot-container" id="login-mascot">
+        <div class="mascot-ear left"></div>
+        <div class="mascot-ear right"></div>
+        <div class="mascot-head">
+            <div class="mascot-face">
+                <div class="mascot-eyes">
+                    <div class="mascot-eye"><div class="mascot-pupil"><div class="mascot-sparkle"></div></div></div>
+                    <div class="mascot-eye"><div class="mascot-pupil"><div class="mascot-sparkle"></div></div></div>
+                </div>
+                <div class="mascot-nose"></div>
+                <div class="mascot-mouth"></div>
+                <div class="mascot-blush left"></div>
+                <div class="mascot-blush right"></div>
+            </div>
+        </div>
+        <div class="mascot-hands">
+            <div class="mascot-hand left"></div>
+            <div class="mascot-hand right"></div>
+        </div>
+    </div>
+
+    <div class="login-card">
+        <h1><i class="fa-solid fa-terminal" style="color: var(--primary);"></i> WClaw</h1>
+        
+        <div class="tabs">
+            <div class="tab active" id="tab-login" onclick="switchTab('login')">登录</div>
+            <div class="tab" id="tab-register" onclick="switchTab('register')">注册</div>
+            <div class="tab" id="tab-reset" onclick="switchTab('reset')">找回密码</div>
+        </div>
+
+        <!-- 登录方式切换（仅登录tab显示） -->
+        <div class="login-mode-switch" id="login-mode-switch">
+            <button class="login-mode-btn active" id="mode-password" onclick="switchLoginMode('password')">
+                <i class="fa-solid fa-key"></i> 密码登录
+            </button>
+            <button class="login-mode-btn" id="mode-sms" onclick="switchLoginMode('sms')">
+                <i class="fa-solid fa-mobile-screen"></i> 验证码登录
+            </button>
+        </div>
+
+        <div class="form-group" id="username-group">
+            <input type="text" id="username" placeholder="账号">
+            <div id="username-hint" style="display: none; font-size: 12px; color: var(--text-sub); margin-top: 6px; padding-left: 4px;">最多7个字符（仅支持中文、英文、数字）</div>
+        </div>
+        <div class="form-group" id="password-group">
+            <input type="password" id="password" placeholder="密码">
+        </div>
+        <div class="form-group" id="phone-group">
+            <input type="tel" id="phone" placeholder="手机号">
+        </div>
+        <div class="form-group sms-group" id="sms-group">
+            <input type="text" id="sms_code" placeholder="验证码">
+            <button class="btn-sms" id="btn-send-sms" onclick="sendSms()">获取验证码</button>
+        </div>
+        <div class="form-group" style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-sub);" id="remember-group">
+            <input type="checkbox" id="remember-pwd" style="width: auto; margin: 0; transform: scale(1.2);">
+            <label for="remember-pwd" style="cursor: pointer;">是否保留账和密？</label>
+        </div>
+        <button class="btn-primary" id="btn-submit" onclick="submitAuth()">连 接</button>
+    </div>
+    
+    <!-- 使用说明按钮 -->
+    <button class="btn-instruction" onclick="document.getElementById('instruction-modal').style.display='flex'">
+        <i class="fa-solid fa-book-open"></i> 使 用 说 明
+    </button>
+</div>
+
+<!-- 使用说明弹窗 -->
+<div id="instruction-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 500px;">
+        <div style="text-align: center; margin-bottom: 16px;">
+            <div style="font-size: 40px; color: var(--warning); margin-bottom: 4px;"><i class="fa-solid fa-book-open"></i></div>
+            <h3 style="margin: 0; font-size: 22px; color: var(--text-main);">使用说明</h3>
+        </div>
+        <div style="margin-bottom: 20px; line-height: 1.8; font-size: 15px; color: var(--text-sub); word-break: break-all; max-height: 55vh; overflow-y: auto; padding-right: 6px; padding-left: 2px;">
+        
+           
+            <p style="margin: 0 0 12px 16px;">完整部署文档还有源代码都在这里：<a href="https://github.com/yzp100911/skillgate-agent" target="_blank" style="color: var(--primary); word-break: break-all;">https://github.com/yzp100911/skillgate-agent</a>
+            
+（注意：由于在国内直接访问github.com是很难访问得了的，因为国内是无法访问国外网站的，所以要通过科学方法才行。实在不知道怎么弄，可以直接微信找我，我的微信号：cp520991317）</p>
+            
+            <hr style="border: none; border-top: 1px solid var(--border-light); margin: 16px 0;">
+            
+        </div>
+        <div class="modal-actions" style="justify-content: center;">
+            <button class="btn-confirm" style="width: 100%; padding: 12px; font-size: 16px; border-radius: var(--radius-md);" onclick="document.getElementById('instruction-modal').style.display='none'">我 已 了 解 ， 关 闭 弹 窗</button>
+        </div>
+    </div>
+</div>
+
+<!-- 记忆管理弹窗 -->
+<div id="memory-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-card" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+            <div style="font-size: 24px; color: var(--primary);"><i class="fa-solid fa-brain"></i></div>
+            <h3 style="margin: 0; font-size: 20px;">记忆管理</h3>
+        </div>
+        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+            <input type="text" id="memory-search-input" placeholder="搜索记忆..." style="flex:1; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--input-bg); color: var(--text); font-size: 14px;" oninput="searchMemories()">
+            <button class="btn-confirm" style="padding: 8px 16px; font-size: 13px;" onclick="openAddMemory()">添加</button>
+        </div>
+        <div id="memory-tabs" style="display: flex; gap: 4px; margin-bottom: 12px;">
+            <button class="btn-cancel" style="font-size: 12px; padding: 4px 12px;" onclick="switchMemoryTab('all')" id="mem-tab-all">全部</button>
+            <button class="btn-cancel" style="font-size: 12px; padding: 4px 12px;" onclick="switchMemoryTab('long')" id="mem-tab-long">长期</button>
+            <button class="btn-cancel" style="font-size: 12px; padding: 4px 12px;" onclick="switchMemoryTab('mid')" id="mem-tab-mid">中期</button>
+            <button class="btn-cancel" style="font-size: 12px; padding: 4px 12px;" onclick="switchMemoryTab('short')" id="mem-tab-short">短期</button>
+            <button class="btn-cancel" style="font-size: 12px; padding: 4px 12px;" onclick="switchMemoryTab('recycle')" id="mem-tab-recycle">回收站</button>
+        </div>
+        <div id="memory-list" style="max-height: 400px; overflow-y: auto;">
+            <!-- 记忆列表渲染区 -->
+        </div>
+        <div class="modal-actions" style="margin-top: 12px;">
+            <button class="btn-cancel" onclick="closeMemoryPanel()">关 闭</button>
+        </div>
+    </div>
+</div>
+
+<!-- 添加/编辑记忆弹窗 -->
+<div id="memory-edit-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-card" style="max-width: 450px;">
+        <h3 style="margin: 0 0 16px; font-size: 18px;" id="memory-edit-title">添加记忆</h3>
+        <input type="hidden" id="memory-edit-original-key">
+        <div style="margin-bottom: 10px;">
+            <label style="font-size: 13px; color: var(--text-sub); display: block; margin-bottom: 4px;">键名 (key)</label>
+            <input type="text" id="memory-edit-key" placeholder="如 user_name" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--input-bg); color: var(--text); font-size: 14px; box-sizing: border-box;">
+        </div>
+        <div style="margin-bottom: 10px;">
+            <label style="font-size: 13px; color: var(--text-sub); display: block; margin-bottom: 4px;">内容 (value)</label>
+            <textarea id="memory-edit-value" rows="6" placeholder="记忆内容" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--input-bg); color: var(--text); font-size: 14px; resize: vertical; box-sizing: border-box;"></textarea>
+        </div>
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <div style="flex:1;">
+                <label style="font-size: 13px; color: var(--text-sub); display: block; margin-bottom: 4px;">分类</label>
+                <select id="memory-edit-category" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--input-bg); color: var(--text); font-size: 14px;">
+                    <option value="general">通用</option>
+                    <option value="user_info">用户信息</option>
+                    <option value="preference">偏好</option>
+                    <option value="fact">事实</option>
+                </select>
+            </div>
+            <div style="flex:1;">
+                <label style="font-size: 13px; color: var(--text-sub); display: block; margin-bottom: 4px;">层级</label>
+                <select id="memory-edit-level" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--input-bg); color: var(--text); font-size: 14px;">
+                    <option value="short">短期 (7天)</option>
+                    <option value="mid">中期 (可衰减)</option>
+                    <option value="long">长期 (永久)</option>
+                </select>
+            </div>
+        </div>
+        <div class="modal-actions" style="gap: 8px;">
+            <button class="btn-cancel" onclick="document.getElementById('memory-edit-modal').style.display='none'">取消</button>
+            <button class="btn-confirm" onclick="saveMemoryEdit()">保存</button>
+        </div>
+    </div>
+</div>
+
+<!-- 提示词管理弹窗 -->
+<div id="prompts-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-card" style="max-width: 700px; max-height: 85vh; overflow-y: auto;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+            <div style="font-size: 24px; color: var(--primary);"><i class="fa-solid fa-file-lines"></i></div>
+            <h3 style="margin: 0; font-size: 20px;">管理 SP</h3>
+        </div>
+        <div id="prompts-tabs" style="display: flex; gap: 4px; margin-bottom: 12px;">
+            <button class="btn-confirm" style="font-size: 12px; padding: 6px 14px;" onclick="switchPromptTab('identity')" id="prompt-tab-identity">IDENTITY</button>
+            <button class="btn-cancel" style="font-size: 12px; padding: 6px 14px;" onclick="switchPromptTab('soul')" id="prompt-tab-soul">SOUL</button>
+            <button class="btn-cancel" style="font-size: 12px; padding: 6px 14px;" onclick="switchPromptTab('user')" id="prompt-tab-user">USER</button>
+            <button class="btn-cancel" style="font-size: 12px; padding: 6px 14px;" onclick="switchPromptTab('heartbeat')" id="prompt-tab-heartbeat">HEARTBEAT</button>
+        </div>
+        <div id="prompt-tab-desc" style="font-size: 13px; color: var(--text-sub); margin-bottom: 8px;">定义 AI 的身份（名字、性格、类型）</div>
+        <textarea id="prompts-editor" rows="14" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--input-bg); color: var(--text); font-size: 14px; font-family: 'Courier New', monospace; resize: vertical; box-sizing: border-box; line-height: 1.6;"></textarea>
+        <div class="modal-actions" style="margin-top: 12px;">
+            <button class="btn-cancel" onclick="closePromptsModal()">关 闭</button>
+            <button class="btn-confirm" onclick="savePrompts()">保 存</button>
+        </div>
+    </div>
+</div>
+
+<!-- 聊天/控制区 -->
+<div id="app-area">
+    <!-- 侧边栏遮罩（移动端用） -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+    
+    <!-- 侧边栏：会话列表 -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <button class="btn-sidebar-new" onclick="createNewSession()">
+                <i class="fa-solid fa-plus-circle"></i> <span>新建聊天</span>
+            </button>
+            <div class="sidebar-header-actions">
+                <button class="btn-sidebar-action" id="btn-batch-session" onclick="toggleBatchSessionDelete()" title="批量删除会话">
+                    <i class="fa-solid fa-list-check"></i> 批量删除
+                </button>
+                <button class="btn-sidebar-action" onclick="openMemoryPanel()" title="记忆管理">
+                    <i class="fa-solid fa-brain"></i> 记忆管理
+                </button>
+            </div>
+        </div>
+        <div class="session-list" id="session-list">
+            <!-- 会话列表渲染区 -->
+        </div>
+        <!-- 批量删除会话操作栏 -->
+        <div id="batch-session-bar" style="display: none; padding: 12px 16px; padding-bottom: calc(12px + env(safe-area-inset-bottom, 8px)); border-top: 1px solid var(--border); display: none; flex-direction: column; gap: 10px; background: rgba(59, 130, 246, 0.04);">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                <span style="font-size: 13px; color: var(--text-sub);">已选 <span id="session-batch-count" style="color: var(--primary); font-weight: 600;">0</span> 项</span>
+                <button class="btn-select-all" id="btn-select-all-sessions" onclick="selectAllSessions()" style="font-size: 12px; padding: 4px 12px; border: 1px solid var(--border); border-radius: 6px; background: transparent; color: var(--text-sub); cursor: pointer; transition: all 0.2s;">全选/取消全选</button>
+            </div>
+            <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                <button class="btn-cancel" style="padding: 8px 16px; font-size: 13px;" onclick="toggleBatchSessionDelete()">取消</button>
+                <button class="btn-confirm" style="padding: 8px 16px; font-size: 13px; background: var(--danger);" onclick="executeBatchSessionDelete()">删除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主聊天区域 -->
+    <div class="main-content">
+        <canvas id="heart-canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none;"></canvas>
+        <div class="header">
+            <div class="header-title">
+                <button class="btn-menu" onclick="toggleSidebar()"><img src="icon/ls.png" class="btn-menu-icon" alt="历史会话"></button>
+                <img src="icon/openclaw.png" id="header-icon" class="header-icon-img" style="display:none"> <img src="icon/xcrab.png" id="header-icon-xcrab" class="header-icon-xcrab" style="display:inline"> <span id="header-backend-label">xCrab</span>
+                <span id="current-model-badge" class="model-badge" title="当前大模型">deepseek-v4-flash</span>
+            </div>
+            <button class="btn-more-actions" onclick="toggleHeaderActions(event)"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+            <div class="header-actions" id="header-actions">
+                <button class="btn-icon btn-icon-blue" onclick="toggleTTSAutoPlay(this)" id="btn-tts-autoplay" title="TTS 自动播放">
+                    <i class="fa-solid fa-volume-high"></i><span class="btn-text btn-text-grid"><span>自动</span><span>播放</span></span>
+                </button>
+                <button class="btn-icon btn-icon-blue" onclick="toggleNotify()" id="btn-notify" title="回复提醒">
+                    <i class="fa-solid fa-bell"></i><span class="btn-text btn-text-grid"><span>回复</span><span>提醒</span></span>
+                </button>
+                <button class="btn-icon btn-icon-blue" onclick="openTTSConfig()" title="TTS 配置">
+                    <i class="fa-solid fa-gear"></i><span class="btn-text btn-text-grid"><span>语音</span><span>配置</span></span>
+                </button>
+                <button class="btn-icon btn-icon-blue" onclick="toggleBatchDelete()" id="btn-batch-delete" title="批量删除">
+                    <i class="fa-solid fa-list-check"></i><span class="btn-text btn-text-grid"><span>批量</span><span>删除</span></span>
+                </button>
+                <button class="btn-icon" onclick="clearAllHistory()" title="清空当前聊天">
+                    <i class="fa-solid fa-trash-can"></i><span class="btn-text btn-text-grid"><span>清空</span><span>聊天</span></span>
+                </button>
+                <button class="btn-icon btn-icon-blue" onclick="openFavorites()" title="我的收藏">
+                    <i class="fa-solid fa-star"></i><span class="btn-text"> 收藏</span>
+                </button>
+                <button class="btn-icon btn-icon-blue" onclick="document.getElementById('feedback-modal').style.display='flex'" title="意见反馈">
+                    <i class="fa-solid fa-comment-dots"></i><span class="btn-text"> 反馈</span>
+                </button>
+                <button class="btn-icon btn-icon-blue" onclick="updateModelButtons();document.getElementById('switch-model-modal').style.display='flex'" title="切换大模型">
+                    <i class="fa-solid fa-arrows-rotate"></i><span class="btn-text btn-text-grid"><span>切换</span><span>模型</span></span>
+                </button>
+                <button class="btn-icon btn-icon-blue" onclick="openPromptsModal()" title="管理SP">
+                    <i class="fa-solid fa-file-lines"></i><span class="btn-text btn-text-grid"><span>管理</span><span>SP</span></span>
+                </button>
+                <button class="btn-icon btn-icon-blue" id="btn-auth-phones" onclick="openAuthPhonesModal()" title="授权管理" style="display: none;">
+                    <i class="fa-solid fa-user-shield"></i><span class="btn-text btn-text-grid"><span>授权</span><span>登陆</span></span>
+                </button>
+                <button id="btn-search" class="btn-icon btn-icon-blue" onclick="toggleSearch();document.getElementById('header-actions').classList.remove('open')" title="搜索消息">
+                    <i class="fa-solid fa-magnifying-glass"></i><span class="btn-text btn-text-grid"><span>搜索</span><span>消息</span></span>
+                </button>
+                <button class="btn-icon" onclick="logout()" title="断开连接">
+                    <i class="fa-solid fa-power-off"></i><span class="btn-text"> 退出</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="search-bar" id="search-bar" style="display:none;">
+            <input type="text" id="search-input" placeholder="搜索消息..." oninput="performSearch(this.value)">
+            <span class="search-count" id="search-count"></span>
+            <button class="btn-icon" onclick="navigateSearchResult(-1)" title="上一个"><i class="fa-solid fa-chevron-up"></i></button>
+            <button class="btn-icon" onclick="navigateSearchResult(1)" title="下一个"><i class="fa-solid fa-chevron-down"></i></button>
+            <button class="btn-icon" onclick="clearSearch()" title="关闭"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <div class="chat-container" id="chat-box">
+            <div class="msg-row ai">
+                <div class="msg-bubble">欢迎来到硅基生命，终端引擎启动中，请输入指令：</div>
+            </div>
+        </div>
+        
+        <!-- 滚动按钮 -->
+        <div id="scroll-buttons" style="position: fixed; right: 16px; bottom: 180px; display: none; flex-direction: column; gap: 6px; z-index: 100;">
+            <button class="btn-scroll" onclick="scrollToBottom()" title="回到底部" style="width: 40px; height: 40px; border-radius: 50%; background: var(--card-bg); backdrop-filter: blur(10px); border: 1px solid var(--border-light); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: var(--shadow-md); transition: all 0.2s;">
+                <i class="fa-solid fa-chevron-down" style="color: var(--text-main); font-size: 16px;"></i>
+            </button>
+            <button class="btn-scroll" onclick="scrollToTop()" title="回到顶部" style="width: 40px; height: 40px; border-radius: 50%; background: var(--card-bg); backdrop-filter: blur(10px); border: 1px solid var(--border-light); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: var(--shadow-md); transition: all 0.2s;">
+                <i class="fa-solid fa-chevron-up" style="color: var(--text-main); font-size: 16px;"></i>
+            </button>
+        </div>
+        
+        <div class="status-bar" id="status-bar">
+            <div class="status-info">
+                <div class="status-icon"><i class="fa-solid fa-cog fa-spin"></i></div>
+                <div class="status-text">正在执行任务... <span id="status-timer">00:00</span></div>
+            </div>
+            <div class="progress-bar"><div class="progress-bar-inner"></div></div>
+        </div>
+
+        <!-- 批量删除操作栏 -->
+        <div id="batch-delete-bar" style="display: none; padding: 12px 20px; background: var(--card-bg); border-top: 1px solid var(--border); justify-content: space-between; align-items: center; z-index: 5; backdrop-filter: blur(10px);">
+            <span style="font-size: 14px; font-weight: 500;">已选择 <span id="batch-count" style="color: var(--primary);">0</span> 条记录</span>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-cancel" onclick="toggleBatchDelete()">取消</button>
+                <button class="btn-confirm" style="background: var(--danger);" onclick="executeBatchDelete()">删除</button>
+            </div>
+        </div>
+
+        <!-- 工具状态条 - 当前工具执行状态 -->
+        <div id="xcrab-tool-bar" class="xcrab-tool-bar">
+            <div class="xcrab-tool-bar-inner" id="xcrab-tool-bar-inner"></div>
+        </div>
+
+        <div class="input-area">
+            <input type="file" id="file-input" style="display: none" onchange="handleFileUpload(event)">
+            <input type="file" id="camera-input" accept="image/*" capture="environment" style="display: none" onchange="handleFileUpload(event)">
+            <div class="input-controls">
+                <button class="btn-upload" title="上传文件或图片" onclick="document.getElementById('file-input').click()">
+                    <i class="fa-solid fa-paperclip"></i>
+                </button>
+                <button class="btn-camera" title="拍照上传" onclick="document.getElementById('camera-input').click()">
+                    <i class="fa-solid fa-camera"></i>
+                </button>
+                <textarea class="input-box" id="command" placeholder="请输入..." rows="1" onkeypress="handleKeyPress(event)" oninput="autoResize(this)"></textarea>
+                <button class="btn-stop" id="stop-btn" onclick="stopCommand()" title="停止执行">
+                    <i class="fa-solid fa-stop"></i>
+                </button>
+                <button class="btn-toggle-agent" id="toggle-agent-btn" onclick="toggleBackend()" title="切换AI后端">
+                    <span class="agent-indicator xcrab"></span>
+                    <span class="agent-label">xCrab</span>
+                </button>
+                <button class="btn-send" id="send-btn" onclick="sendCommand()">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </div>
+            <div class="hallucination-guard-row">
+                <label class="hallucination-guard-label" title="勾选后，若AI开始响应后10秒内未检测到工具调用，将自动停止任务">
+                    <input type="checkbox" id="hallucination-guard-pc" class="hallucination-guard-checkbox" onchange="window.toggleHallucinationGuard && window.toggleHallucinationGuard(this.checked)">
+                    <i class="fa-solid fa-shield-halved hallucination-guard-icon"></i>
+                    <span class="hallucination-guard-text">幻觉拦截</span>
+                    <span class="hallucination-guard-tip">10秒未调用工具自动停止</span>
+                </label>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 移动端浮动输入框 -->
+<div id="mobile-input-overlay" class="mobile-input-overlay">
+    <div class="mobile-input-container">
+        <div class="mobile-input-header">
+            <span class="mobile-input-title" id="mobile-input-title"><i class="fa-solid fa-keyboard" id="mobile-input-title-icon"></i> <span id="mobile-input-title-text">输入指令</span></span>
+            <button class="mobile-input-close" onclick="closeMobileInput()">
+                <i class="fa-solid fa-chevron-down"></i>
+            </button>
+        </div>
+        <div class="hallucination-guard-row hallucination-guard-row-mobile">
+            <label class="hallucination-guard-label" title="勾选后，若AI开始响应后10秒内未检测到工具调用，将自动停止任务">
+                <input type="checkbox" id="hallucination-guard-mobile" class="hallucination-guard-checkbox" onchange="window.toggleHallucinationGuard && window.toggleHallucinationGuard(this.checked)">
+                <i class="fa-solid fa-shield-halved hallucination-guard-icon"></i>
+                <span class="hallucination-guard-text">幻觉拦截</span>
+                <span class="hallucination-guard-tip">10秒未调用工具自动停止</span>
+            </label>
+        </div>
+        <textarea id="mobile-command" class="mobile-input-box" placeholder="请输入..." rows="6" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="send" data-x5-fix="1"></textarea>
+        <div class="mobile-input-footer">
+            <div class="mobile-input-footer-left">
+                <button class="btn-upload" title="上传文件或图片" onclick="document.getElementById('file-input').click()">
+                    <i class="fa-solid fa-paperclip"></i>
+                </button>
+                <button class="btn-camera" title="拍照上传" onclick="document.getElementById('camera-input').click()">
+                    <i class="fa-solid fa-camera"></i>
+                </button>
+            </div>
+            <div class="mobile-input-footer-right">
+                <button class="btn-stop" id="mobile-stop-btn" onclick="stopCommand()" title="停止执行" style="display:none;">
+                    <i class="fa-solid fa-stop"></i>
+                </button>
+                <button class="btn-send" id="mobile-send-btn" onclick="sendMobileCommand()">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked@5.1.2/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script src="app.js?v=20260612b"></script>
+
+</body>
+</html>

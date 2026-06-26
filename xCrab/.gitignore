@@ -1,0 +1,42 @@
+# xCrab 端补充规则
+# 根 .gitignore 已覆盖大部分
+
+# -------- 运行时数据库 --------
+/data/quota.db
+/data/quota.db-shm
+/data/quota.db-wal
+/data/stats.db
+/data/stats.db-shm
+/data/stats.db-wal
+
+# -------- 用户 / 画布 / 会话 --------
+/data/users/
+/data/canvas/
+/data/workspace-temporary/
+/data/workspace-permanent/
+
+# -------- 记忆系统 --------
+/memory/memories.db
+/memory/memories.db-shm
+/memory/memories.db-wal
+
+# -------- 重要：skillgate-agent 完整副本（含 cclaw/eclaw/wclaw 副本）--------
+/skillgate-agent/
+
+# -------- 单文件敏感数据 --------
+/auth.json
+/Text.txt
+/learnings/
+/.learnings/
+
+# -------- 测试图片 / 临时文件 --------
+*.png
+*.jpg
+*.csv
+*.xlsx
+*.html
+!src/**/*.png
+!src/**/*.jpg
+!src/**/*.csv
+!src/**/*.xlsx
+!src/**/*.html

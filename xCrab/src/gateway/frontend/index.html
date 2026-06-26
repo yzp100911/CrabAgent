@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>xCrab - AI 助手</title>
+<link rel="icon" type="image/png" href="/ico/xCrab.png">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+  <!-- 侧边栏 -->
+  <div id="sidebar">
+    <div class="sidebar-header">
+      <span class="sidebar-title">🦀 xCrab</span>
+      <button class="sidebar-btn" onclick="newSession()" title="新对话"><i class="fa-solid fa-plus"></i></button>
+    </div>
+    <div class="sidebar-token">
+      <input type="text" id="token-input" placeholder="访问令牌" onchange="saveToken()">
+    </div>
+    <div id="session-list"></div>
+  </div>
+
+  <!-- 主区域 -->
+  <div id="main">
+    <!-- 顶部栏 -->
+    <div id="topbar">
+      <button class="topbar-btn" onclick="toggleSidebar()" id="sidebar-toggle"><i class="fa-solid fa-bars"></i></button>
+      <span class="topbar-title">xCrab 对话</span>
+      <span id="current-model-badge" class="model-badge" title="当前模型">MiniMax-M2.7</span>
+      <span id="status-indicator" class="status-idle">●</span>
+      <button class="topbar-btn" onclick="document.getElementById('switch-model-modal').style.display='flex'" title="切换模型"><i class="fa-solid fa-arrows-rotate"></i></button>
+      <button class="topbar-btn" onclick="clearChat()" title="清空对话"><i class="fa-solid fa-trash-can"></i></button>
+    </div>
+
+    <!-- 聊天区域 -->
+    <div id="chat-box" class="chat-box">
+      <div class="welcome">
+        <div class="welcome-icon">🦀</div>
+        <div class="welcome-title">xCrab AI 助手</div>
+        <div class="welcome-desc">迷你 · 敏捷 · 强大</div>
+      </div>
+    </div>
+
+    <!-- 输入区域 -->
+    <div id="input-area">
+      <div class="input-wrapper">
+        <textarea id="command" rows="1" placeholder="输入消息..." autofocus></textarea>
+        <button id="send-btn" onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+      </div>
+      <div class="input-hint">Enter 发送 · Shift+Enter 换行</div>
+    </div>
+  </div>
+</div>
+
+<!-- 切换模型弹窗 -->
+<div id="switch-model-modal" class="modal-overlay" style="display:none;">
+  <div class="modal-card" style="text-align:center;">
+    <div style="font-size:36px;color:#6366f1;margin-bottom:8px;"><i class="fa-solid fa-arrows-rotate"></i></div>
+    <h3 style="font-size:20px;margin-bottom:4px;">切换模型</h3>
+    <p style="color:#888;font-size:14px;margin:0 0 20px 0;">选择要使用的 AI 模型</p>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+      <button class="model-switch-btn" data-model="minimax" onclick="executeSwitchModel('minimax')">
+        <strong>MiniMax-M2.7</strong>
+        <span style="font-size:12px;opacity:0.7;">MiniMax · 默认</span>
+      </button>
+      <button class="model-switch-btn" data-model="deepseek" onclick="executeSwitchModel('deepseek')">
+        <strong>deepseek-v4-flash[1M]</strong>
+        <span style="font-size:12px;opacity:0.7;">DeepSeek</span>
+      </button>
+      <button class="model-switch-btn" data-model="mimo" onclick="executeSwitchModel('mimo')">
+        <strong>mimo-v2.5-pro[1M]</strong>
+        <span style="font-size:12px;opacity:0.7;">Mimo · 1M</span>
+      </button>
+    </div>
+    <div style="display:flex;justify-content:center;">
+      <button class="modal-cancel-btn" onclick="closeSwitchModel()" style="width:100%;padding:10px;border-radius:8px;">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 超时确认弹窗 -->
+<div id="timeout-modal" class="modal-overlay" style="display:none;">
+  <div class="modal-card" style="text-align:center;">
+    <div style="font-size:36px;color:#f59e0b;margin-bottom:8px;"><i class="fa-solid fa-clock"></i></div>
+    <h3 style="font-size:20px;margin-bottom:4px;">⏰ 执行时间提醒</h3>
+    <p id="timeout-message" style="color:#888;font-size:14px;margin:0 0 20px 0;">工具已执行超过 15 分钟，是否终止当前任务？</p>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button class="modal-cancel-btn" style="padding:10px 24px;border-radius:8px;background:#e74c3c;color:#fff;border:none;cursor:pointer;" onclick="stopTimeoutTask()">是，终止任务</button>
+      <button class="model-switch-btn" style="padding:10px 24px;border-radius:8px;cursor:pointer;border:none;" onclick="document.getElementById('timeout-modal').style.display='none'">否，继续执行</button>
+    </div>
+  </div>
+</div>
+
+<!-- 消息模板 -->
+<template id="msg-user">
+  <div class="msg msg-user">
+    <div class="msg-bubble"></div>
+  </div>
+</template>
+<template id="msg-ai">
+  <div class="msg msg-ai">
+    <div class="msg-avatar">🦀</div>
+    <div class="msg-bubble msg-bubble-ai"></div>
+  </div>
+</template>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="app-base.js"></script>
+<script src="app-xcrab.js"></script>
+</body>
+</html>

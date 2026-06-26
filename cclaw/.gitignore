@@ -1,0 +1,38 @@
+# cclaw 端补充规则
+# 根 .gitignore 已覆盖大部分
+
+# -------- cclaw 浏览器 / agent 运行时数据 --------
+/data/browser/openclaw/user-data/
+/data/browser/openclaw/Default/
+/data/agents/
+/data/codex-home/
+/data/flows/
+/data/tasks/
+/data/memory/
+/data/registry/
+
+# -------- workspace 内部敏感日志 --------
+/data/workspace-main/.learnings/
+/data/workspace-main/sessions/
+/data/workspaces/*/sessions/
+
+# -------- openclaw 配置（运行时生成，含 API Key 副本）--------
+/data/openclaw.json
+/data/openclaw.json.bak
+/data/openclaw.json.last-good
+/data/openclaw.json.ds
+/data/openclaw.json.m27
+/data/openclaw2.json
+
+# -------- 启动脚本临时生成 --------
+/data/logs/
+/cclaw.log
+/send_*.log
+
+# -------- .cloakvenv（Python 虚拟环境）--------
+/data/workspace-main/.cloakvenv/
+/data/.cloakvenv/
+/.cloakvenv/
+
+# -------- index.js 备份 --------
+/index.js.bak
