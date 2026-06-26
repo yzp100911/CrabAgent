@@ -479,8 +479,10 @@ A: No. Each server has independent config and state (unless they share the same 
 
 ## 许可证 / License
 
-MIT — 详见各子目录中的 `LICENSE`（如存在）。
-MIT — see `LICENSE` files inside subdirectories if present.
+本仓库基于 [MIT License](LICENSE) 发布 — 详情见 [`LICENSE`](LICENSE) 文件。
+Released under the [MIT License](LICENSE) — see the [`LICENSE`](LICENSE) file for full text.
+
+Copyright © 2026 yzp100911
 
 ---
 
